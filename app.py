@@ -88,4 +88,4 @@ if __name__ == '__main__':
     # Change the port number here (default is 5000)
     port = 11999  # You can change this to any available port
     print(f"Server running on http://localhost:{port}")
-    app.run(debug=True, port=port) 
+    app.run(host='0.0.0.0', port=port, debug=False) 

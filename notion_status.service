@@ -1,0 +1,14 @@
+[Unit]
+Description=Notion Status Monitoring Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/path/to/your/server_status_web
+Environment="PATH=/path/to/your/server_status_web/venv/bin"
+ExecStart=/path/to/your/server_status_web/venv/bin/python app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 
