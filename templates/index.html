@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROːBIT GPU Server Status Embed Web</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .metric-card {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #333333;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-left: 4px solid #800020;
+        }
+        .metric-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #444444;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+        .cpu-progress {
+            background-color: #800020;
+        }
+        .ram-progress {
+            background-color: #800020;
+        }
+        .gpu-progress {
+            background-color: #800020;
+        }
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #800020;
+            padding-bottom: 10px;
+        }
+        .gpu-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ROːBIT GPU Server Status Embed Web</h1>
+        
+        <div class="metric-card">
+            <div class="metric-title">Uptime</div>
+            <div class="metric-value" id="uptime">00:00:00</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-title">CPU Usage</div>
+            <div class="metric-value" id="cpu-usage">0%</div>
+            <div class="progress-bar">
+                <div class="progress cpu-progress" id="cpu-progress" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-title">RAM Usage</div>
+            <div class="metric-value" id="ram-usage">0%</div>
+            <div class="progress-bar">
+                <div class="progress ram-progress" id="ram-progress" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="gpu-container">
+            <!-- GPU cards will be dynamically added here -->
+        </div>
+    </div>
+
+    <script>
+        function createGpuCard(gpu) {
+            return `
+                <div class="metric-card">
+                    <div class="metric-title">${gpu.name}</div>
+                    <div class="metric-value" id="gpu-${gpu.name.replace(/\s+/g, '-')}-usage">${gpu.gpu_utilization}%</div>
+                    <div class="progress-bar">
+                        <div class="progress gpu-progress" id="gpu-${gpu.name.replace(/\s+/g, '-')}-progress" style="width: ${gpu.gpu_utilization}%"></div>
+                    </div>
+                    ${gpu.memory_used ? `
+                        <div class="gpu-info">
+                            Memory Usage: ${gpu.memory_used.toFixed(1)}%
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function updateMetrics() {
+            fetch('/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('uptime').textContent = data.uptime;
+                    
+                    const cpuUsage = data.cpu_usage;
+                    document.getElementById('cpu-usage').textContent = `${cpuUsage}%`;
+                    document.getElementById('cpu-progress').style.width = `${cpuUsage}%`;
+                    
+                    const ramUsage = data.ram_usage;
+                    document.getElementById('ram-usage').textContent = `${ramUsage}%`;
+                    document.getElementById('ram-progress').style.width = `${ramUsage}%`;
+
+                    // Update GPU information
+                    const gpuContainer = document.getElementById('gpu-container');
+                    gpuContainer.innerHTML = data.gpu_usage.map(createGpuCard).join('');
+                })
+                .catch(error => console.error('Error fetching metrics:', error));
+        }
+
+        // Update metrics every second
+        setInterval(updateMetrics, 1000);
+        updateMetrics(); // Initial update
+    </script>
+</body>
+</html> 
