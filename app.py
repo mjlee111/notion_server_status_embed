@@ -4,6 +4,19 @@ import time
 from datetime import datetime, timedelta
 import platform
 
+# Try to import NVIDIA monitoring
+try:
+    import pynvml
+    NVIDIA_AVAILABLE = True
+    try:
+        pynvml.nvmlInit()
+        nvidia_gpu_count = pynvml.nvmlDeviceGetCount()
+    except:
+        nvidia_gpu_count = 0
+except ImportError:
+    NVIDIA_AVAILABLE = False
+    nvidia_gpu_count = 0
+
 app = Flask(__name__)
 
 def get_uptime():
@@ -22,7 +35,22 @@ def get_ram_usage():
 def get_gpu_usage():
     gpu_info = []
     
-    # Get GPU memory usage from shared memory
+    # Check for NVIDIA GPUs if available
+    if NVIDIA_AVAILABLE and nvidia_gpu_count > 0:
+        for i in range(nvidia_gpu_count):
+            try:
+                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                gpu_info.append({
+                    'name': pynvml.nvmlDeviceGetName(handle).decode('utf-8'),
+                    'memory_used': info.used / info.total * 100,
+                    'gpu_utilization': utilization.gpu
+                })
+            except Exception as e:
+                print(f"Error getting NVIDIA GPU info: {e}")
+    
+    # Get integrated GPU info
     try:
         memory = psutil.virtual_memory()
         shared_memory = memory.available - memory.free
@@ -39,7 +67,7 @@ def get_gpu_usage():
             'memory_used': round(gpu_memory_percent, 1)
         })
     except Exception as e:
-        print(f"Error getting GPU info: {e}")
+        print(f"Error getting integrated GPU info: {e}")
     
     return gpu_info
 
